@@ -1,6 +1,7 @@
 name: AWS Authentication
 
-on: [push, pull_request]
+on: 
+  workflow_dispatch:
 
 permissions:
     id-token: write   # This is required for requesting the JWT
@@ -27,6 +28,14 @@ jobs:
     - name: Verify AWS identity
       run: |
         aws sts get-caller-identity
+
+    - name: Use AWS credentials
+      run: |
+        aws s3 ls
+      env:
+        AWS_ACCESS_KEY_ID: ${{ steps.aws-credentials.outputs.aws-access-key-id }}
+        AWS_SECRET_ACCESS_KEY: ${{ steps.aws-credentials.outputs.aws-secret-access-key }}
+        AWS_SESSION_TOKEN: ${{ steps.aws-credentials.outputs.aws-session-token }}
 
     - name: Run your build or deployment steps
       run: |
