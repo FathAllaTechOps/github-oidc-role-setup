@@ -67,7 +67,8 @@ Before you begin, ensure you have the following installed:
     ```
 
 5. Validate the setup from the AWS console. Check the IAM Role and its Trust relationships to ensure it has been configured correctly.
-    - <Placeholder to put a screenshot for the IAM Role> with the Trust relationships
+    - <img src="assets/Github-Runners-Access-IAM-Global.png" width="600" height="400" alt="IAM Role Trust Relationships">
+
 
 ## License
 
