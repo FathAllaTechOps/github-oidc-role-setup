@@ -7,8 +7,8 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      id-token: write # for aws-actions/configure-aws-credentials
-      contents: read  # for actions/checkout
+        id-token: write   # This is required for requesting the JWT
+        contents: write    # This is required for actions/checkout
 
     steps:
     - name: Checkout repository
@@ -22,7 +22,7 @@ jobs:
         role-to-assume: arn:aws:iam::{{ secrets.AWS_ACCOUNT_ID }}:role/Github-Runners-Access
         aws-region: us-east-1
         output-credentials: true
-        
+
     # Install AWS CLI
     - name: Install AWS CLI
       run: |
