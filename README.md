@@ -69,7 +69,40 @@ Before you begin, ensure you have the following installed:
 5. Validate the setup from the AWS console. Check the IAM Role and its Trust relationships to ensure it has been configured correctly.
     - <img src="assets/Github-Runners-Access-IAM-Global.png" width="600" height="400" alt="IAM Role Trust Relationships">
 
+## Utilizing the Setup in Your GitHub Workflow
 
+To utilize the IAM role setup in your GitHub Actions workflow, follow these steps:
+
+1. **Add permissions for requesting the JWT and for actions/checkout before the jobs section**:
+    ```yaml
+    permissions:
+      id-token: write   # This is required for requesting the JWT
+      contents: write   # This is required for actions/checkout
+    ```
+
+2. **Use the AWS authentication GitHub action**:
+    ```yaml
+    - name: Configure AWS credentials using OIDC
+      id: aws-credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/Github-Runners-Access
+        role-session-name: GitHub_to_AWS_via_FederatedOIDC_Run_ID_${{ github.run_id }} 
+        aws-region: eu-west-1
+        output-credentials: true
+    ```
+
+3. **Setup the variables for other GitHub Actions** if you need to reference the credentials:
+    ```yaml
+    - name: Use AWS credentials
+      run: |
+        aws s3 ls
+      env:
+        AWS_ACCESS_KEY_ID: ${{ steps.aws-credentials.outputs.aws-access-key-id }}
+        AWS_SECRET_ACCESS_KEY: ${{ steps.aws-credentials.outputs.aws-secret-access-key }}
+        AWS_SESSION_TOKEN: ${{ steps.aws-credentials.outputs.aws-session-token }}
+    ```
+    
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
