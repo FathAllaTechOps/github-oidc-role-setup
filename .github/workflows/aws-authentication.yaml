@@ -2,13 +2,14 @@ name: AWS Authentication
 
 on: [push, pull_request]
 
+permissions:
+    id-token: write   # This is required for requesting the JWT
+    contents: write    # This is required for actions/checkout
 jobs:
   aws-auth:
     runs-on: ubuntu-latest
 
-    permissions:
-        id-token: write   # This is required for requesting the JWT
-        contents: write    # This is required for actions/checkout
+
 
     steps:
     - name: Checkout repository
