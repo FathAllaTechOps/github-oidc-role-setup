@@ -1,0 +1,34 @@
+name: AWS Authentication
+
+on: [push, pull_request]
+
+permissions:
+    id-token: write   # This is required for requesting the JWT
+    contents: write    # This is required for actions/checkout
+
+jobs:
+  aws-auth:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Configure AWS credentials using OIDC
+    - name: Configure AWS credentials using OIDC
+      id: aws-credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/Github-Runners-Access
+        role-session-name: GitHub_to_AWS_via_FederatedOIDC_Run_ID_${{ github.run_id }} 
+        aws-region: eu-west-1
+        output-credentials: true
+
+    - name: Verify AWS identity
+      run: |
+        aws sts get-caller-identity
+
+    - name: Run your build or deployment steps
+      run: |
+        # Add your build or deployment steps here
+        echo "Running build or deployment steps..."
