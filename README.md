@@ -102,6 +102,9 @@ To utilize the IAM role setup in your GitHub Actions workflow, follow these step
         AWS_SECRET_ACCESS_KEY: ${{ steps.aws-credentials.outputs.aws-secret-access-key }}
         AWS_SESSION_TOKEN: ${{ steps.aws-credentials.outputs.aws-session-token }}
     ```
+
+For more clarifications, check the [.github/workflows/aws-authentication.yaml](.github/workflows/aws-authentication.yaml) file.
+
     
 ## License
 
