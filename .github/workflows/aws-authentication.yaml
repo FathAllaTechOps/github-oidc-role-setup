@@ -1,0 +1,40 @@
+name: AWS Authentication
+
+on: [push, pull_request]
+
+jobs:
+  aws-auth:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write # for aws-actions/configure-aws-credentials
+      contents: read  # for actions/checkout
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Configure AWS credentials using OIDC
+    - name: Configure AWS credentials using OIDC
+      id: aws-credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::{{ secrets.AWS_ACCOUNT_ID }}:role/Github-Runners-Access
+        aws-region: us-east-1
+        output-credentials: true
+        
+    # Install AWS CLI
+    - name: Install AWS CLI
+      run: |
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip awscliv2.zip
+        sudo ./aws/install
+
+    - name: Verify AWS identity
+      run: |
+        aws sts get-caller-identity
+
+    - name: Run your build or deployment steps
+      run: |
+        # Add your build or deployment steps here
+        echo "Running build or deployment steps..."

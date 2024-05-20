@@ -1,0 +1,93 @@
+---
+- name: Setup AWS Identity Provider and Role
+  hosts: localhost
+  gather_facts: false
+  vars:
+    region: "us-east-1"  # Adjust the AWS region as necessary
+    trust_policy: |
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Federated": "arn:aws:iam::{{ aws_account_id }}:oidc-provider/token.actions.githubusercontent.com"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+              "StringEquals": {
+                "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+              },
+              "StringLike": {
+                "token.actions.githubusercontent.com:sub": "repo:FathAllaTechOps/*:*"
+              }
+            }
+          }
+        ]
+      }
+ 
+  tasks:
+    - name: Retrieve AWS Account ID using AWS CLI
+      command: aws sts get-caller-identity --query "Account" --output text
+      register: aws_account_id_output
+      delegate_to: localhost
+ 
+    - name: Set AWS Account ID variable
+      set_fact:
+        aws_account_id: "{{ aws_account_id_output.stdout }}"
+ 
+    - name: Check if OIDC provider exists
+      command: >
+        aws iam list-open-id-connect-providers --query "OpenIDConnectProviderList[?ends_with(Arn, 'token.actions.githubusercontent.com')]" --output text
+      register: oidc_provider_exists
+      delegate_to: localhost
+      ignore_errors: yes
+ 
+    - name: Create OIDC provider if not exists
+      command: >
+        aws iam create-open-id-connect-provider --url "https://token.actions.githubusercontent.com" --client-id-list "sts.amazonaws.com" --thumbprint-list "6938fd4d98bab03faadb97b34396831e3780aea1" --tags Key=Name,Value=GitHubProvider
+      when: oidc_provider_exists.stdout == ""
+      delegate_to: localhost
+ 
+    - name: Generate trust policy JSON file
+      copy:
+        dest: "./trust_policy.json"
+        content: "{{ trust_policy }}"
+        mode: '0644'
+      delegate_to: localhost
+ 
+    - name: Check if the Github-Runners-Access role exists
+      command: aws iam get-role --role-name "Github-Runners-Access"
+      register: role_check
+      delegate_to: localhost
+      ignore_errors: yes
+ 
+    - name: Update the role to increase max session duration if it exists
+      command: >
+        aws iam update-role
+        --role-name "Github-Runners-Access"
+        --max-session-duration 7200
+      when: role_check is not failed
+      delegate_to: localhost
+ 
+    - name: Create the role if it does not exist
+      command: >
+        aws iam create-role
+        --role-name "Github-Runners-Access"
+        --assume-role-policy-document file://trust_policy.json
+        --max-session-duration 7200
+      when: role_check is failed
+      register: role_creation
+      failed_when: 'role_creation.stderr_lines and "EntityAlreadyExists" not in role_creation.stderr'
+      delegate_to: localhost
+ 
+    - name: Attach AdministratorAccess policy to the role
+      command: >
+        aws iam attach-role-policy
+        --role-name "Github-Runners-Access"
+        --policy-arn "arn:aws:iam::aws:policy/AdministratorAccess"
+      delegate_to: localhost
+ 
+    - name: Output role information
+      debug:
+        msg: "Role and OIDC provider are setup successfully with account ID {{ aws_account_id }}."
